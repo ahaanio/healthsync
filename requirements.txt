@@ -1,0 +1,5 @@
+flask
+flask-cors
+assemblyai
+google-genai
+cryptography  # only needed for --https

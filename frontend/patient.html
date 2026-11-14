@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0d9488">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="HealthSync">
+    <title>HealthSync</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-800">
+
+<!-- ================= AUTH ================= -->
+<div id="authScreen" class="hidden min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-teal-600 to-cyan-700">
+    <div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-7">
+        <div class="text-center mb-6">
+            <div class="mx-auto h-14 w-14 rounded-2xl bg-teal-600 text-white flex items-center justify-center text-2xl font-black mb-3">H</div>
+            <h1 class="text-2xl font-extrabold">HealthSync</h1>
+            <p class="text-sm text-slate-500">Your care plan, in your pocket.</p>
+        </div>
+        <div class="grid grid-cols-2 bg-slate-100 rounded-xl p-1 mb-5 text-sm font-semibold">
+            <button id="tabLogin" class="py-2 rounded-lg">Log in</button>
+            <button id="tabSignup" class="py-2 rounded-lg">Create account</button>
+        </div>
+        <form id="authForm" class="space-y-3">
+            <input id="fName" type="text" placeholder="Full name" autocomplete="name"
+                   class="hidden w-full border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <input id="fEmail" type="email" placeholder="Email" autocomplete="email" required
+                   class="w-full border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <input id="fPassword" type="password" placeholder="Password" autocomplete="current-password" required
+                   class="w-full border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <p id="authError" class="hidden text-sm text-rose-600 font-medium"></p>
+            <button id="authSubmit" type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-xl shadow transition">Log in</button>
+        </form>
+    </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="appScreen" class="hidden min-h-screen md:flex">
+
+    <div id="overlay" class="hidden fixed inset-0 bg-black/40 z-30 md:hidden"></div>
+
+    <!-- Left menu -->
+    <nav id="sidebar" class="fixed md:sticky top-0 left-0 z-40 h-screen w-64 bg-white border-r border-slate-200 flex flex-col
+                             -translate-x-full md:translate-x-0 transition-transform duration-200">
+        <div class="p-5 flex items-center gap-3 border-b border-slate-100">
+            <div class="h-10 w-10 rounded-xl bg-teal-600 text-white flex items-center justify-center font-black">H</div>
+            <div>
+                <div class="font-extrabold leading-tight">HealthSync</div>
+                <div id="navName" class="text-xs text-slate-400"></div>
+            </div>
+        </div>
+        <ul class="p-3 space-y-1 flex-1">
+            <li><button data-page="home" class="navBtn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium">
+                <span class="text-lg">🏠</span> <span data-i18n="nav_home"></span></button></li>
+            <li><button data-page="notes" class="navBtn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium">
+                <span class="text-lg">📋</span> <span data-i18n="nav_notes"></span>
+                <span id="notesBadge" class="hidden ml-auto text-[10px] font-bold bg-rose-500 text-white rounded-full px-2 py-0.5" data-i18n="badge_new"></span></button></li>
+            <li><button data-page="profile" class="navBtn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium">
+                <span class="text-lg">👤</span> <span data-i18n="nav_profile"></span></button></li>
+            <li><button data-page="settings" class="navBtn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium">
+                <span class="text-lg">⚙️</span> <span data-i18n="nav_settings"></span></button></li>
+        </ul>
+        <div class="p-4 text-[11px] text-slate-400 border-t border-slate-100" data-i18n="nav_footer"></div>
+    </nav>
+
+    <div class="flex-1 min-w-0">
+        <header class="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-slate-200 px-4 py-3 flex items-center gap-3">
+            <button id="menuBtn" class="md:hidden h-10 w-10 rounded-xl hover:bg-slate-100 text-xl" aria-label="Open menu">☰</button>
+            <h1 id="pageTitle" class="text-lg font-bold"></h1>
+            <span id="langBusy" class="hidden ml-auto text-xs text-slate-400 flex items-center gap-2">
+                <span class="h-3 w-3 rounded-full border-2 border-teal-200 border-t-teal-600 animate-spin"></span>
+                <span data-i18n="translating"></span>
+            </span>
+        </header>
+
+        <main class="p-4 md:p-8 max-w-3xl mx-auto">
+
+            <!-- HOME -->
+            <section id="page-home" class="page space-y-5">
+                <div>
+                    <p class="text-sm text-slate-500" id="todayLabel"></p>
+                    <h2 class="text-2xl font-extrabold" id="homeGreeting"></h2>
+                </div>
+
+                <div class="rounded-2xl p-5 bg-gradient-to-br from-teal-600 to-cyan-600 text-white shadow-lg">
+                    <div id="checkinIdle">
+                        <h3 class="font-bold text-lg" data-i18n="checkin_title"></h3>
+                        <p class="text-sm text-teal-50 mb-4" data-i18n="checkin_desc"></p>
+                        <button id="checkinBtn" class="bg-white text-teal-700 font-bold px-5 py-2.5 rounded-xl shadow hover:bg-teal-50" data-i18n="checkin_btn"></button>
+                    </div>
+                    <div id="checkinDone" class="hidden items-center gap-3">
+                        <div class="h-10 w-10 shrink-0 rounded-full bg-white/20 flex items-center justify-center text-xl">✓</div>
+                        <div>
+                            <h3 class="font-bold" data-i18n="checkedin_title"></h3>
+                            <p class="text-sm text-teal-50" data-i18n="checkedin_desc"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="notifCard" class="hidden rounded-2xl p-4 bg-amber-50 border border-amber-200 items-center gap-3">
+                    <span class="text-2xl">🔔</span>
+                    <p class="text-sm text-amber-900 flex-1" data-i18n="notif_prompt"></p>
+                    <button id="notifBtn" class="bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-lg" data-i18n="turn_on"></button>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                    <div class="flex items-center justify-between mb-3 gap-2">
+                        <h3 class="font-bold" data-i18n="today_reminders"></h3>
+                        <a id="homeCalLink" class="hidden text-xs font-semibold text-teal-700 hover:underline" href="#" data-i18n="add_calendar"></a>
+                    </div>
+                    <ul id="homeReminders" class="space-y-2"></ul>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                    <h3 class="font-bold mb-3" data-i18n="my_goals"></h3>
+                    <div id="homeGoals" class="space-y-2"></div>
+                </div>
+            </section>
+
+            <!-- NOTES -->
+            <section id="page-notes" class="page hidden space-y-4">
+                <p class="text-sm text-slate-500" data-i18n="notes_intro"></p>
+                <div id="notesList" class="space-y-4"></div>
+            </section>
+
+            <!-- PROFILE -->
+            <section id="page-profile" class="page hidden space-y-5">
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex items-center gap-4">
+                    <div id="avatar" class="h-16 w-16 shrink-0 rounded-full bg-teal-600 text-white flex items-center justify-center text-2xl font-bold"></div>
+                    <div class="min-w-0">
+                        <h2 id="profName" class="text-xl font-bold"></h2>
+                        <p id="profEmail" class="text-sm text-slate-500 break-all"></p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm text-center">
+                    <p class="text-xs uppercase tracking-wider text-slate-400 font-semibold" data-i18n="patient_id"></p>
+                    <p id="profCode" class="text-4xl font-mono font-black text-teal-700 my-2"></p>
+                    <p class="text-sm text-slate-500" data-i18n="patient_id_desc"></p>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm text-sm text-slate-600">
+                    <h3 class="font-bold text-slate-800 mb-1" data-i18n="privacy_title"></h3>
+                    <p data-i18n="privacy_body"></p>
+                </div>
+            </section>
+
+            <!-- SETTINGS -->
+            <section id="page-settings" class="page hidden space-y-5">
+
+                <!-- Language & reading -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+                    <h3 class="font-bold flex items-center gap-2"><span>🌐</span> <span data-i18n="set_language"></span></h3>
+                    <select id="setLanguage" class="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"></select>
+                    <div>
+                        <p class="text-sm font-semibold mb-2" data-i18n="set_reading"></p>
+                        <div class="grid grid-cols-2 gap-2" id="setReading">
+                            <button data-value="standard" class="optBtn" data-i18n="reading_standard"></button>
+                            <button data-value="simple" class="optBtn" data-i18n="reading_simple"></button>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-500 bg-slate-50 rounded-lg p-3" data-i18n="set_language_note"></p>
+                </div>
+
+                <!-- Display -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+                    <h3 class="font-bold flex items-center gap-2"><span>🔠</span> <span data-i18n="set_textsize"></span></h3>
+                    <div class="grid grid-cols-3 gap-2" id="setTextSize">
+                        <button data-value="normal" class="optBtn"><span class="text-sm">A</span></button>
+                        <button data-value="large" class="optBtn"><span class="text-base">A</span></button>
+                        <button data-value="xlarge" class="optBtn"><span class="text-xl">A</span></button>
+                    </div>
+                </div>
+
+                <!-- Notifications -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+                    <h3 class="font-bold flex items-center gap-2"><span>🔔</span> <span data-i18n="set_notifications"></span></h3>
+                    <p id="notifState" class="text-sm text-slate-500"></p>
+                    <div class="flex flex-wrap gap-2">
+                        <button id="setNotifOn" class="hidden bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold px-4 py-2 rounded-lg" data-i18n="turn_on"></button>
+                        <button id="setNotifTest" class="hidden border border-slate-300 hover:bg-slate-50 text-sm font-semibold px-4 py-2 rounded-lg" data-i18n="send_test"></button>
+                    </div>
+                </div>
+
+                <!-- Account -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+                    <h3 class="font-bold flex items-center gap-2"><span>👤</span> <span data-i18n="set_account"></span></h3>
+                    <form id="nameForm" class="space-y-2">
+                        <label class="text-sm font-semibold" data-i18n="your_name" for="setName"></label>
+                        <div class="flex gap-2">
+                            <input id="setName" type="text" class="flex-1 min-w-0 border border-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <button class="bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold px-4 rounded-xl" data-i18n="save"></button>
+                        </div>
+                    </form>
+                    <details>
+                        <summary class="text-sm font-semibold cursor-pointer text-teal-700" data-i18n="change_password"></summary>
+                        <form id="pwForm" class="space-y-2 mt-3">
+                            <input id="pwCurrent" type="password" autocomplete="current-password" data-i18n-ph="current_password"
+                                   class="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <input id="pwNew" type="password" autocomplete="new-password" data-i18n-ph="new_password"
+                                   class="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <button class="bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl" data-i18n="update_password"></button>
+                        </form>
+                    </details>
+                    <button id="logoutBtn" class="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold py-3 rounded-xl" data-i18n="log_out"></button>
+                </div>
+
+                <!-- Privacy / danger zone -->
+                <div class="bg-white rounded-2xl border border-rose-200 p-5 shadow-sm space-y-3">
+                    <h3 class="font-bold flex items-center gap-2 text-rose-700"><span>🗑️</span> <span data-i18n="delete_title"></span></h3>
+                    <p class="text-sm text-slate-600" data-i18n="delete_desc"></p>
+                    <details>
+                        <summary class="text-sm font-semibold cursor-pointer text-rose-700" data-i18n="delete_btn"></summary>
+                        <form id="deleteForm" class="flex gap-2 mt-3">
+                            <input id="deletePw" type="password" autocomplete="current-password" data-i18n-ph="confirm_password"
+                                   class="flex-1 min-w-0 border border-rose-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-rose-500">
+                            <button class="bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold px-4 rounded-xl" data-i18n="delete_confirm"></button>
+                        </form>
+                    </details>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<div id="toast" class="hidden fixed left-1/2 -translate-x-1/2 bottom-6 z-50 bg-slate-900 text-white text-sm font-medium px-5 py-3 rounded-2xl shadow-2xl max-w-[90vw]"></div>
+
+<script>
+// =====================================================================
+// Interface text (English source). Other languages are translated once by
+// the server and cached, so adding a string here is all that's needed.
+// =====================================================================
+const STR_EN = {
+    nav_home: "Home", nav_notes: "Doctor's Notes", nav_profile: "Profile", nav_settings: "Settings",
+    nav_footer: "Approved by your doctor before it reaches you.",
+    badge_new: "NEW", translating: "Translating…",
+    greeting: "Hi, {name} 👋",
+    checkin_title: "At the clinic?", checkin_desc: "Check in so your doctor knows you've arrived.",
+    checkin_btn: "I've arrived · Check in",
+    checkedin_title: "You're checked in",
+    checkedin_desc: "Your doctor will see you soon. Your visit summary will appear here afterwards.",
+    checkedin_toast: "You're checked in. Your doctor has been notified.",
+    notif_prompt: "Turn on notifications so we can remind you at the right time.",
+    turn_on: "Turn on", send_test: "Send a test",
+    today_reminders: "Today's reminders", add_calendar: "＋ Add to calendar", add_all_calendar: "＋ Add all to calendar",
+    calendar_short: "＋ Calendar",
+    no_reminders_yet: "Your reminders will show up here after your visit.", no_reminders: "No reminders in your plan.",
+    next: "Next", every_day: "Every day", every_week: "Every week", once: "Once",
+    my_goals: "My goals", no_goals_yet: "Your goals will show up here after your visit.",
+    all_goals_done: "🎉 All goals done for today. Nice work!",
+    notes_intro: "Summaries from your visits, reviewed and approved by your doctor.",
+    no_notes_title: "No visit summaries yet",
+    no_notes_desc: "After your appointment, your doctor will send your summary here.",
+    latest_visit: "Latest visit", visit: "Visit", summary: "Summary", goals: "Goals", diet: "Diet", reminders: "Reminders",
+    none: "None", clinical_note: "Doctor's clinical note (for your records, in the doctor's original words)",
+    new_summary_toast: "📋 New visit summary from your doctor",
+    new_summary_notif_title: "New visit summary",
+    new_summary_notif_body: "Your doctor has sent your care plan and reminders.",
+    reminder_title: "⏰ Reminder",
+    patient_id: "Your patient ID",
+    patient_id_desc: "Your doctor uses this to send your visit summaries to the right person.",
+    privacy_title: "Your privacy",
+    privacy_body: "Your name and contact details never leave HealthSync. Before any AI processes your visit, personal details are removed from the transcript, and the audio itself is deleted right after.",
+    welcome_toast: "Welcome! Your patient ID is {code}",
+    set_language: "Language", set_reading: "Reading level",
+    reading_standard: "Standard", reading_simple: "Simple words",
+    set_language_note: "Your care plan is translated for you. Medicine names and doses are never changed. Your doctor's clinical note stays in its original language.",
+    set_textsize: "Text size",
+    set_notifications: "Notifications",
+    notif_granted: "On. You'll be notified at reminder times while HealthSync is open. Add reminders to your calendar to get them anytime.",
+    notif_denied: "Blocked in your browser settings. Use “Add to calendar” instead.",
+    notif_default: "Off",
+    notif_unsupported: "Not available here. Use “Add to calendar” to get reminders on your phone.",
+    notif_on_title: "Notifications on", notif_on_body: "We'll remind you when it's time.",
+    notif_test_body: "This is what your reminders will look like.",
+    set_account: "Account", your_name: "Your name", save: "Save", saved: "Saved ✓",
+    change_password: "Change password", current_password: "Current password", new_password: "New password",
+    update_password: "Update password", password_updated: "Password updated ✓",
+    log_out: "Log out",
+    delete_title: "Delete my account and data",
+    delete_desc: "Permanently deletes your account, visit summaries and reminders from HealthSync. This can't be undone.",
+    delete_btn: "I want to delete my account", confirm_password: "Enter your password to confirm", delete_confirm: "Delete",
+    deleted_toast: "Your account and data have been deleted.",
+    settings_saved: "Settings saved ✓", translate_failed: "Couldn't translate right now. Showing English.",
+};
+const PAGE_TITLE_KEYS = { home: 'nav_home', notes: 'nav_notes', profile: 'nav_profile', settings: 'nav_settings' };
+const TEXT_SIZES = { normal: '16px', large: '18px', xlarge: '20px' };
+
+let STR = STR_EN;
+function t(key, vars = {}) {
+    let s = STR[key] ?? STR_EN[key] ?? key;
+    for (const [k, v] of Object.entries(vars)) s = s.replaceAll('{' + k + '}', v);
+    return s;
+}
+function applyStaticText() {
+    document.querySelectorAll('[data-i18n]').forEach(e => e.textContent = t(e.dataset.i18n));
+    document.querySelectorAll('[data-i18n-ph]').forEach(e => e.placeholder = t(e.dataset.i18nPh));
+}
+
+// ---------------- helpers ----------------
+const $ = id => document.getElementById(id);
+function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+}
+const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (_) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} },
+};
+const todayKey = () => new Date().toISOString().slice(0, 10);
+const locale = () => (me && me.settings.language) || 'en';
+function fmtTime(hhmm) {
+    const [h, m] = hhmm.split(':').map(Number);
+    return new Date(2000, 0, 1, h, m).toLocaleTimeString(locale(), { hour: 'numeric', minute: '2-digit' });
+}
+function fmtDate(iso) {
+    return new Date(iso).toLocaleDateString(locale(), { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+const repeatLabel = r => t({ daily: 'every_day', weekly: 'every_week', once: 'once' }[r] || 'every_day');
+let toastTimer;
+function toast(msg) {
+    $('toast').textContent = msg;
+    $('toast').classList.remove('hidden');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => $('toast').classList.add('hidden'), 5000);
+}
+async function api(path, opts = {}) {
+    const r = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...opts });
+    const data = await r.json().catch(() => ({}));
+    if (r.status === 401 && me) { me = null; showAuth(); }
+    if (!r.ok) throw new Error(data.error || 'Something went wrong.');
+    return data;
+}
+function busy(on) { $('langBusy').classList.toggle('hidden', !on); $('langBusy').classList.toggle('flex', on); }
+
+// ---------------- state ----------------
+let me = null, visits = [], pollTimer, reminderTimer, currentPage = 'home';
+
+// ---------------- auth ----------------
+let authMode = 'login';
+function setAuthMode(mode) {
+    authMode = mode;
+    const signup = mode === 'signup';
+    $('fName').classList.toggle('hidden', !signup);
+    $('fName').required = signup;
+    $('fPassword').autocomplete = signup ? 'new-password' : 'current-password';
+    $('authSubmit').textContent = signup ? 'Create account' : 'Log in';
+    $('tabLogin').className = 'py-2 rounded-lg ' + (!signup ? 'bg-white shadow text-teal-700' : 'text-slate-500');
+    $('tabSignup').className = 'py-2 rounded-lg ' + (signup ? 'bg-white shadow text-teal-700' : 'text-slate-500');
+    $('authError').classList.add('hidden');
+}
+$('tabLogin').onclick = () => setAuthMode('login');
+$('tabSignup').onclick = () => setAuthMode('signup');
+$('authForm').onsubmit = async e => {
+    e.preventDefault();
+    $('authSubmit').disabled = true;
+    try {
+        const body = { email: $('fEmail').value, password: $('fPassword').value };
+        if (authMode === 'signup') body.name = $('fName').value;
+        me = await api(authMode === 'signup' ? '/api/signup' : '/api/login', { method: 'POST', body: JSON.stringify(body) });
+        $('fPassword').value = '';
+        await startApp(authMode === 'signup');
+    } catch (err) {
+        $('authError').textContent = err.message;
+        $('authError').classList.remove('hidden');
+    } finally {
+        $('authSubmit').disabled = false;
+    }
+};
+function showAuth() {
+    clearInterval(pollTimer); clearInterval(reminderTimer);
+    STR = STR_EN;
+    document.documentElement.style.fontSize = '';
+    $('appScreen').classList.add('hidden');
+    $('authScreen').classList.remove('hidden');
+    setAuthMode('login');
+}
+
+// ---------------- navigation ----------------
+function go(page) {
+    currentPage = page;
+    document.querySelectorAll('.page').forEach(p => p.classList.toggle('hidden', p.id !== 'page-' + page));
+    document.querySelectorAll('.navBtn').forEach(b => {
+        b.className = 'navBtn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium ' +
+            (b.dataset.page === page ? 'bg-teal-50 text-teal-700' : 'text-slate-600 hover:bg-slate-50');
+    });
+    $('pageTitle').textContent = t(PAGE_TITLE_KEYS[page]);
+    if (page === 'notes') { $('notesBadge').classList.add('hidden'); store.set('seenVisits:' + me.id, visits.map(v => v.id)); }
+    closeMenu();
+    store.set('page', page);
+}
+document.querySelectorAll('.navBtn').forEach(b => b.onclick = () => go(b.dataset.page));
+function openMenu() { $('sidebar').classList.remove('-translate-x-full'); $('overlay').classList.remove('hidden'); }
+function closeMenu() { $('sidebar').classList.add('-translate-x-full'); $('overlay').classList.add('hidden'); }
+$('menuBtn').onclick = openMenu;
+$('overlay').onclick = closeMenu;
+
+// ---------------- language ----------------
+async function loadLanguage(lang) {
+    if (lang === 'en') { STR = STR_EN; return; }
+    const cacheKey = 'ui:' + lang + ':' + Object.keys(STR_EN).length + ':' + JSON.stringify(STR_EN).length;
+    const cached = store.get(cacheKey, null);
+    if (cached) { STR = cached; return; }
+    busy(true);
+    try {
+        STR = await api('/api/ui-strings', { method: 'POST', body: JSON.stringify({ lang, strings: STR_EN }) });
+        store.set(cacheKey, STR);
+    } catch (_) {
+        STR = STR_EN;
+        toast(STR_EN.translate_failed);
+    } finally { busy(false); }
+}
+
+function renderAll() {
+    document.documentElement.lang = locale();
+    document.documentElement.style.fontSize = TEXT_SIZES[me.settings.text_size] || '';
+    applyStaticText();
+    $('pageTitle').textContent = t(PAGE_TITLE_KEYS[currentPage]);
+    $('navName').textContent = me.patient_code;
+    $('homeGreeting').textContent = t('greeting', { name: me.name.split(' ')[0] });
+    $('todayLabel').textContent = new Date().toLocaleDateString(locale(), { weekday: 'long', month: 'long', day: 'numeric' });
+    $('profName').textContent = me.name;
+    $('profEmail').textContent = me.email;
+    $('profCode').textContent = me.patient_code;
+    $('avatar').textContent = me.name.trim()[0].toUpperCase();
+    renderSettings();
+    renderNotifState();
+    renderHome();
+    renderNotes();
+}
+
+// ---------------- app ----------------
+async function startApp(isNew) {
+    $('authScreen').classList.add('hidden');
+    $('appScreen').classList.remove('hidden');
+    await loadLanguage(me.settings.language);
+    renderCheckin(me.checked_in);
+    renderAll();
+    go(isNew ? 'home' : store.get('page', 'home'));
+    if (isNew) toast(t('welcome_toast', { code: me.patient_code }));
+    await refreshVisits(true);
+    clearInterval(pollTimer);
+    pollTimer = setInterval(() => refreshVisits(false), 5000);
+    clearInterval(reminderTimer);
+    reminderTimer = setInterval(checkReminders, 20000);
+    checkReminders();
+}
+
+// ---------------- check in ----------------
+function renderCheckin(checkedIn) {
+    checkedIn = !!checkedIn;  // classList.toggle(cls, undefined) flips instead of setting
+    $('checkinIdle').classList.toggle('hidden', checkedIn);
+    $('checkinDone').classList.toggle('hidden', !checkedIn);
+    $('checkinDone').classList.toggle('flex', checkedIn);
+}
+$('checkinBtn').onclick = async () => {
+    try { await api('/api/checkin', { method: 'POST' }); renderCheckin(true); toast(t('checkedin_toast')); }
+    catch (err) { toast(err.message); }
+};
+
+// ---------------- visits (polled) ----------------
+async function refreshVisits(force) {
+    let list;
+    try { list = await api('/api/my-visits'); } catch (_) { return; }
+    const known = new Set(visits.map(v => v.id));
+    const fresh = list.filter(v => !known.has(v.id));
+    const changed = force || fresh.length || JSON.stringify(list) !== JSON.stringify(visits);
+    visits = list;
+
+    const seen = new Set(store.get('seenVisits:' + me.id, []));
+    const unseen = visits.some(v => !seen.has(v.id));
+    $('notesBadge').classList.toggle('hidden', !unseen || currentPage === 'notes');
+    if (currentPage === 'notes') store.set('seenVisits:' + me.id, visits.map(v => v.id));
+
+    if (!force && fresh.length) {
+        renderCheckin(false);
+        toast(t('new_summary_toast'));
+        notify(t('new_summary_notif_title'), t('new_summary_notif_body'));
+    }
+    if (changed) { renderHome(); renderNotes(); }
+}
+const currentPlan = () => visits[0] || null;
+
+function renderHome() {
+    const plan = currentPlan();
+    const ul = $('homeReminders');
+    ul.innerHTML = '';
+    const reminders = plan ? plan.reminders : [];
+    if (!reminders.length) {
+        ul.appendChild(el('li', 'text-sm text-slate-400 italic', t(plan ? 'no_reminders' : 'no_reminders_yet')));
+        $('homeCalLink').classList.add('hidden');
+    } else {
+        $('homeCalLink').href = `/api/visits/${plan.id}/reminders.ics`;
+        $('homeCalLink').classList.remove('hidden');
+        const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+        const sorted = [...reminders].sort((a, b) => a.time.localeCompare(b.time));
+        const nextIdx = sorted.findIndex(r => { const [h, m] = r.time.split(':').map(Number); return h * 60 + m >= nowMin; });
+        sorted.forEach((r, i) => {
+            const isNext = i === nextIdx;
+            const li = el('li', 'flex items-center gap-3 rounded-xl px-4 py-3 border ' + (isNext ? 'bg-teal-50 border-teal-300' : 'bg-slate-50 border-slate-100'));
+            li.appendChild(el('span', 'font-mono text-sm font-bold w-20 shrink-0 ' + (isNext ? 'text-teal-700' : 'text-slate-500'), fmtTime(r.time)));
+            const tx = el('div', 'flex-1 min-w-0');
+            tx.appendChild(el('div', 'text-sm font-medium', r.title));
+            tx.appendChild(el('div', 'text-xs text-slate-400', repeatLabel(r.repeat)));
+            li.appendChild(tx);
+            if (isNext) li.appendChild(el('span', 'text-[10px] font-bold uppercase tracking-wider text-teal-700 bg-white border border-teal-200 rounded-full px-2 py-0.5 shrink-0', t('next')));
+            ul.appendChild(li);
+        });
+    }
+
+    const goals = $('homeGoals');
+    goals.innerHTML = '';
+    if (!plan || !plan.patient_goals.length) {
+        goals.appendChild(el('p', 'text-sm text-slate-400 italic', t('no_goals_yet')));
+        return;
+    }
+    const doneKey = `goalsDone:${me.id}:${plan.id}:${todayKey()}`;
+    const done = new Set(store.get(doneKey, []));
+    plan.patient_goals.forEach((g, i) => {
+        const label = el('label', 'flex items-start gap-3 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 cursor-pointer border border-slate-100');
+        const cb = el('input', 'mt-0.5 h-5 w-5 shrink-0 accent-teal-600');
+        cb.type = 'checkbox';
+        cb.checked = done.has(i);
+        const span = el('span', 'text-sm ' + (cb.checked ? 'line-through text-slate-400' : ''), g);
+        cb.onchange = () => {
+            cb.checked ? done.add(i) : done.delete(i);
+            store.set(doneKey, [...done]);
+            span.className = 'text-sm ' + (cb.checked ? 'line-through text-slate-400' : '');
+            if (done.size === plan.patient_goals.length) toast(t('all_goals_done'));
+        };
+        label.appendChild(cb); label.appendChild(span);
+        goals.appendChild(label);
+    });
+}
+
+function listSection(title, items) {
+    const wrap = el('div');
+    wrap.appendChild(el('h4', 'text-sm font-bold text-slate-700 mb-1', title));
+    if (!items.length) { wrap.appendChild(el('p', 'text-sm text-slate-400 italic', t('none'))); return wrap; }
+    const ul = el('ul', 'list-disc list-inside text-sm text-slate-600 space-y-1');
+    items.forEach(x => ul.appendChild(el('li', '', x)));
+    wrap.appendChild(ul);
+    return wrap;
+}
+
+function renderNotes() {
+    const box = $('notesList');
+    const openIds = new Set([...box.querySelectorAll('details[data-visit][open]')].map(d => +d.dataset.visit));
+    box.innerHTML = '';
+    if (!visits.length) {
+        const empty = el('div', 'bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center');
+        empty.appendChild(el('div', 'text-4xl mb-2', '📋'));
+        empty.appendChild(el('p', 'font-semibold', t('no_notes_title')));
+        empty.appendChild(el('p', 'text-sm text-slate-500', t('no_notes_desc')));
+        box.appendChild(empty);
+        return;
+    }
+    visits.forEach((v, idx) => {
+        const card = el('details', 'bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden group');
+        card.dataset.visit = v.id;
+        card.open = openIds.size ? openIds.has(v.id) : idx === 0;
+        const sum = el('summary', 'cursor-pointer list-none p-5 flex items-center justify-between');
+        const head = el('div');
+        head.appendChild(el('div', 'text-xs font-semibold uppercase tracking-wider text-teal-700', t(idx === 0 ? 'latest_visit' : 'visit')));
+        head.appendChild(el('div', 'font-bold', fmtDate(v.approved_at || v.created_at)));
+        sum.appendChild(head);
+        sum.appendChild(el('span', 'text-slate-400 group-open:rotate-180 transition', '▾'));
+        card.appendChild(sum);
+
+        const body = el('div', 'px-5 pb-5 space-y-4');
+        const s = el('div', 'bg-teal-50 border border-teal-100 rounded-xl p-4');
+        s.appendChild(el('h4', 'text-sm font-bold text-teal-900 mb-1', t('summary')));
+        s.appendChild(el('p', 'text-sm text-teal-900 leading-relaxed', v.patient_summary || '—'));
+        body.appendChild(s);
+
+        const grid = el('div', 'grid sm:grid-cols-2 gap-4');
+        grid.appendChild(listSection(t('goals'), v.patient_goals));
+        grid.appendChild(listSection(t('diet'), v.diet_plan));
+        body.appendChild(grid);
+
+        const rem = el('div');
+        const remHead = el('div', 'flex items-center justify-between mb-2 gap-2');
+        remHead.appendChild(el('h4', 'text-sm font-bold text-slate-700', t('reminders')));
+        if (v.reminders.length) {
+            const a = el('a', 'text-xs font-semibold text-teal-700 hover:underline', t('add_all_calendar'));
+            a.href = `/api/visits/${v.id}/reminders.ics`;
+            remHead.appendChild(a);
+        }
+        rem.appendChild(remHead);
+        if (!v.reminders.length) rem.appendChild(el('p', 'text-sm text-slate-400 italic', t('none')));
+        v.reminders.forEach((r, i) => {
+            const row = el('div', 'flex items-center gap-3 text-sm py-1.5 border-b border-slate-100 last:border-0');
+            row.appendChild(el('span', 'font-mono font-bold text-slate-500 w-20 shrink-0', fmtTime(r.time)));
+            row.appendChild(el('span', 'flex-1 min-w-0', r.title));
+            const a = el('a', 'text-xs text-teal-700 hover:underline shrink-0', t('calendar_short'));
+            a.href = `/api/visits/${v.id}/reminders.ics?i=${i}`;
+            row.appendChild(a);
+            rem.appendChild(row);
+        });
+        body.appendChild(rem);
+
+        const clinical = el('details', 'text-sm');
+        clinical.appendChild(el('summary', 'cursor-pointer text-slate-500 font-medium', t('clinical_note')));
+        clinical.appendChild(el('pre', 'mt-2 whitespace-pre-wrap font-mono text-xs text-slate-600 bg-slate-50 rounded-xl p-4', v.note));
+        body.appendChild(clinical);
+
+        card.appendChild(body);
+        box.appendChild(card);
+    });
+}
+
+// ---------------- settings ----------------
+function paintOptions(groupId, value) {
+    $(groupId).querySelectorAll('.optBtn').forEach(b => {
+        b.className = 'optBtn py-2.5 rounded-xl border text-sm font-semibold transition ' +
+            (b.dataset.value === value ? 'bg-teal-600 border-teal-600 text-white' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50');
+    });
+}
+function renderSettings() {
+    const sel = $('setLanguage');
+    if (!sel.options.length) {
+        Object.entries(me.languages).forEach(([code, name]) => sel.appendChild(new Option(name, code)));
+    }
+    sel.value = me.settings.language;
+    paintOptions('setReading', me.settings.reading_level);
+    paintOptions('setTextSize', me.settings.text_size);
+    $('setName').value = me.name;
+}
+
+async function saveSettings(patch) {
+    const before = { ...me.settings };
+    const contentChanges = 'language' in patch || 'reading_level' in patch;
+    me.settings = { ...me.settings, ...patch };
+    renderSettings();
+    if ('text_size' in patch) document.documentElement.style.fontSize = TEXT_SIZES[patch.text_size];
+    try {
+        me.settings = await api('/api/settings', { method: 'PATCH', body: JSON.stringify(patch) });
+    } catch (err) {
+        me.settings = before; renderAll(); toast(err.message); return;
+    }
+    if (contentChanges) {
+        busy(true);
+        try {
+            if ('language' in patch) await loadLanguage(me.settings.language);
+            await refreshVisits(true);  // server returns the plan in the new language / reading level
+        } finally { busy(false); }
+    }
+    renderAll();
+    toast(t('settings_saved'));
+}
+$('setLanguage').onchange = () => saveSettings({ language: $('setLanguage').value });
+$('setReading').querySelectorAll('.optBtn').forEach(b => b.onclick = () => saveSettings({ reading_level: b.dataset.value }));
+$('setTextSize').querySelectorAll('.optBtn').forEach(b => b.onclick = () => saveSettings({ text_size: b.dataset.value }));
+
+$('nameForm').onsubmit = async e => {
+    e.preventDefault();
+    try {
+        me = { ...me, ...(await api('/api/account', { method: 'PATCH', body: JSON.stringify({ name: $('setName').value }) })) };
+        renderAll(); toast(t('saved'));
+    } catch (err) { toast(err.message); }
+};
+$('pwForm').onsubmit = async e => {
+    e.preventDefault();
+    try {
+        await api('/api/account', { method: 'PATCH', body: JSON.stringify({ current_password: $('pwCurrent').value, new_password: $('pwNew').value }) });
+        $('pwCurrent').value = ''; $('pwNew').value = '';
+        toast(t('password_updated'));
+    } catch (err) { toast(err.message); }
+};
+$('deleteForm').onsubmit = async e => {
+    e.preventDefault();
+    try {
+        await api('/api/account', { method: 'DELETE', body: JSON.stringify({ password: $('deletePw').value }) });
+        $('deletePw').value = '';
+        const msg = t('deleted_toast');
+        me = null; visits = [];
+        showAuth(); toast(msg);
+    } catch (err) { toast(err.message); }
+};
+$('logoutBtn').onclick = async () => {
+    await api('/api/logout', { method: 'POST' }).catch(() => {});
+    me = null; visits = [];
+    showAuth();
+};
+
+// ---------------- notifications ----------------
+const notifSupported = () => 'Notification' in window && window.isSecureContext;
+function renderNotifState() {
+    const perm = notifSupported() ? Notification.permission : 'unsupported';
+    const showPrompt = perm === 'default';
+    $('notifCard').classList.toggle('hidden', !showPrompt);
+    $('notifCard').classList.toggle('flex', showPrompt);
+    $('notifState').textContent = t('notif_' + perm);
+    $('setNotifOn').classList.toggle('hidden', perm !== 'default');
+    $('setNotifTest').classList.toggle('hidden', perm !== 'granted');
+}
+async function enableNotifications() {
+    if (!notifSupported()) return;
+    const p = await Notification.requestPermission();
+    renderNotifState();
+    if (p === 'granted') notify(t('notif_on_title'), t('notif_on_body'));
+}
+$('notifBtn').onclick = enableNotifications;
+$('setNotifOn').onclick = enableNotifications;
+$('setNotifTest').onclick = () => notify(t('reminder_title'), t('notif_test_body'));
+function notify(title, body) {
+    if (notifSupported() && Notification.permission === 'granted') {
+        try { new Notification(title, { body }); } catch (_) {}
+    }
+}
+function checkReminders() {
+    const plan = currentPlan();
+    if (!plan || !me) return;
+    const now = new Date();
+    const hhmm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    const firedKey = `fired:${me.id}:${todayKey()}`;
+    const fired = new Set(store.get(firedKey, []));
+    plan.reminders.forEach((r, i) => {
+        const id = `${plan.id}:${i}`;
+        if (r.time === hhmm && !fired.has(id)) {
+            fired.add(id);
+            store.set(firedKey, [...fired]);
+            toast('⏰ ' + r.title);
+            notify(t('reminder_title'), r.title);
+        }
+    });
+    renderHome();
+}
+
+// ---------------- boot ----------------
+(async () => {
+    try { me = await api('/api/me'); await startApp(false); }
+    catch (_) { showAuth(); }
+})();
+</script>
+</body>
+</html>

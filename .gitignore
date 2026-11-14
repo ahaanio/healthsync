@@ -1,0 +1,25 @@
+# Secrets
+.env
+backend/.env
+backend/config.py
+
+# Recorded audio and local data
+*.wav
+*.webm
+*.mp3
+*.m4a
+*.ogg
+*.mp4
+appointment_db.json
+backend/appointment_db.json
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# App data (patient accounts, visits) and session secret
+backend/healthsync.db
+backend/.flask_secret
+backend/uploads/
