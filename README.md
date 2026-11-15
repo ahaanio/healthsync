@@ -1,3 +1,5 @@
+#HealthSync
+
 A lot of the time, during doctor appointments, the patient doesn't remember the instructions that the doctor told them, and they don't
 understand what the doctor is saying due to language barriers. Also, the doctors burn out writing notes for every patient. 
 HealthSync is an AI scribe that records appointments, creates a summary, and sends that information to the patient. Here is how it
