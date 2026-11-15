@@ -261,12 +261,12 @@ def transcribe_with_retry(audio_path, attempts=3):
 # Gemini sometimes returns 503 "model is overloaded" or 429 "rate limited".
 # Tried in order: if one is overloaded or out of quota, we fall back to the next.
 # Note-writing uses the strongest models; translation is simpler, so it uses fast "lite" models first.
-GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite']
+GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.5-flash-lite']
 FAST_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.6-flash']
 RETRYABLE_CODES = {429, 500, 503, 504}
 MAX_ATTEMPTS_PER_MODEL = 2  # with backups available, move on quickly rather than waiting
 # Max seconds to wait on one model before trying the next (a hung model shouldn't stall the app)
-NOTE_TIMEOUT_S = 60
+NOTE_TIMEOUT_S = 25
 FAST_TIMEOUT_S = 20
 
 
